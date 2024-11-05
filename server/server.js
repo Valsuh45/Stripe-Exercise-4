@@ -64,7 +64,7 @@ app.post("/create-checkout-session", async (req, res) => {
 
     const invoiceItem = await stripe.invoiceItems.create({
       customer: customer.id,
-      price: "price_1QGFYDH5BvIQq6La9EcOjwCX",
+      price: "price_1234",
       invoice: invoice.id,
     });
 
@@ -81,7 +81,7 @@ app.post("/create-checkout-session", async (req, res) => {
     payment_method_types: ["card"],
     line_items: [
       {
-        price: "price_1QDpgPH5BvIQq6LaPoowGlUT", // Replace with a valid price ID
+        price: "price_1234", // Replace with a valid price ID
         quantity: 1,
       },
     ],
