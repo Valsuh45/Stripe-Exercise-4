@@ -22,27 +22,70 @@ app.get("/config", (req, res) => {
 // Endpoint to create a Checkout Session
 app.post("/create-checkout-session", async (req, res) => {
   try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: "price_1234", // Replace with a valid price ID
-          quantity: 1,
-        },
-      ],
-      mode: "subscription",
-      success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin}/cancel.html`,
-    });
+    // Retrieve existing customer by email or create a new one if not found
+    const email = "Boris@example.com";
+    let customer = (await stripe.customers.list({ email, limit: 1 })).data[0];
 
-    console.log("Checkout Session created successfully:", session.id); // Log session ID
-    res.json({ url: session.url });
-  } catch (error) {
-    console.error("Error creating checkout session:", error.message); // Log error details
-    res.status(500).json({ error: error.message });
-  }
+    if (!customer) {
+      customer = await stripe.customers.create({
+        name: "Boris",
+        email,
+      });
+      console.log("Customer created successfully:", customer.id);
+    } else {
+      console.log("Reusing existing customer:", customer.id);
+    }
+
+    const paymentMethod = await stripe.paymentMethods.attach(
+      'pm_card_visa',
+      {
+        customer: customer.id,
+      }
+    );
+  // console.log("Payment method attached successfully:", paymentMethod);
+
+    // Update the Customer's default Payment Method for invoices
+    const updateCustomer = await stripe.customers.update(customer.id, {
+      invoice_settings: {
+        default_payment_method: paymentMethod.id,
+      },
+    });
+    console.log("Customer updated successfully:", updateCustomer);
+    const requestId = updateCustomer.lastResponse.requestId;
+    console.log("Request ID for updating customer:", requestId);
+
+
+  // Set up a payment method for future use in the subscription
+  const session = await stripe.checkout.sessions.create({
+    customer: customer.id,
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price: "price_1QGFz1Hcq0BpKt6rnrZ4gL9t", // Replace with a valid price ID
+        quantity: 1,
+      },
+    ],
+    mode: "subscription",
+    success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${req.headers.origin}/cancel.html`,
+  });
+
+  console.log("Checkout Session created successfully:", session.id);
+  res.json({ url: session.url });
+} catch (error) {
+  console.error("Error creating checkout session:", error.message);
+  res.status(500).json({ error: error.message });
+}
+
+const paymentIntent = await stripe.paymentIntents.create({
+  amount: 500,
+  currency: 'eur',
+  payment_method: 'pm_card_visa',
 });
 
+console.log("Payment Intent created successfully:", paymentIntent);
+
+});
 // Create Products & Prices if they don't already exist
 app.post("/setup-products-prices", async (req, res) => {
   try {
