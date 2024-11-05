@@ -54,7 +54,7 @@ app.post("/create-checkout-session", async (req, res) => {
       payment_method_types: ["card"],
       line_items: [
         {
-          price: "price_1QHkcxApLisUKZ0vgNA5cURI", // Replace with a valid price ID
+          price: "price_123", // Replace with a valid price ID
           quantity: 1,
         },
       ],
