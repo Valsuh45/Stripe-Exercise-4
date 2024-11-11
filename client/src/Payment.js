@@ -1,71 +1,71 @@
-import React, { useState } from "react";
+// import { useEffect, useState } from "react";
+// import { Elements } from "@stripe/react-stripe-js";
+// import CheckoutForm from "./CheckoutForm";
+// import { loadStripe } from "@stripe/stripe-js";
 
-const Payment = () => {
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
+// function Payment() {
+//   const [stripePromise, setStripePromise] = useState(null);
+//   const [clientSecret, setClientSecret] = useState("");
+//   const [amount, setAmount] = useState(1999); // Default amount, you can set it dynamically
 
-  const handleGoToCheckout = async () => {
-    try {
-      // First, retrieve or create the customer
-      const customerResponse = await fetch("/create-customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name }),
-      });
+//   useEffect(() => {
+//     fetch("/config").then(async (r) => {
+//       const { publishableKey } = await r.json();
+//       setStripePromise(loadStripe(publishableKey));
+//     });
+//   }, []);
 
-      if (!customerResponse.ok) {
-        const customerError = await customerResponse.json();
-        throw new Error(`Customer creation failed: ${customerError.error}`);
-      }
+//   useEffect(() => {
+//     fetch("/create-payment-intent", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ amount }), // Pass amount dynamically
+//     }).then(async (result) => {
+//       const { clientSecret } = await result.json();
+//       setClientSecret(clientSecret);
+//     });
+//   }, [amount]); // Re-fetch the clientSecret if the amount changes
 
-      const { customerId } = await customerResponse.json();
-      console.log("Customer ID:", customerId);
+//   return (
+//     <>
+//       <h1>React Stripe and the Payment Element</h1>
+//       {clientSecret && stripePromise && (
+//         <Elements stripe={stripePromise} options={{ clientSecret }}>
+//           <CheckoutForm />
+//         </Elements>
+//       )}
+//     </>
+//   );
+// }
 
-      // After customer is set up, create the subscription
-      const checkoutResponse = await fetch("/create-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerId,
-          priceId: "price_123", // Replace with actual price ID
-        }),
-      });
+// export default Payment;
 
-      if (!checkoutResponse.ok) {
-        const checkoutError = await checkoutResponse.json();
-        throw new Error(`Checkout session creation failed: ${checkoutError.error}`);
-      }
 
-      const { clientSecret } = await checkoutResponse.json();
-      if (clientSecret) {
-        window.location.href = `/checkout?clientSecret=${clientSecret}`;
-      } else {
-        throw new Error("No client secret returned from server");
-      }
-    } catch (error) {
-      console.error("Error during checkout process:", error);
-      alert("There was an issue with the checkout process. Please check the console for details.");
-    }
-  };
+import { useEffect, useState } from "react";
+import { Elements } from "@stripe/react-stripe-js";
+import CheckoutForm from "./CheckoutForm";
+import { loadStripe } from "@stripe/stripe-js";
+
+function Payment({ useCardElement, email, priceId }) {
+  const [stripePromise, setStripePromise] = useState(null);
+
+  useEffect(() => {
+    fetch("/config").then(async (r) => {
+      const { publishableKey } = await r.json();
+      setStripePromise(loadStripe(publishableKey));
+    });
+  }, []);
 
   return (
-    <div>
-      <h3>Enter your details:</h3>
-      <input
-        type="text"
-        placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <button onClick={handleGoToCheckout}>Go to Checkout</button>
-    </div>
+    <>
+      <h1>Stripe Subscription with {useCardElement ? "Card" : "Payment"} Element</h1>
+      {stripePromise && (
+        <Elements stripe={stripePromise}>
+          <CheckoutForm email={email} priceId={priceId} />
+        </Elements>
+      )}
+    </>
   );
-};
+}
 
 export default Payment;
